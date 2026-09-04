@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Paddock Pass | Authentication</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="login-page">
+  <div class="auth-box card">
+    <h2>Paddock Pass Login</h2>
+    <div id="notif" class="notification-banner"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="e.g. adrian_newey" required />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn" style="width: 100%;">Enter Paddock</button>
+    </form>
+    <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-muted);">
+      <b>Available Seed Logins:</b><br>
+      Engineer: <code>adrian_newey</code> | <code>password123</code><br>
+      Mechanic: <code>calum_mech</code> | <code>password123</code><br>
+      Shipment: <code>sarah_logistics</code> | <code>password123</code>
+    </div>
+  </div>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const notif = document.getElementById('notif');
+      notif.style.display = 'none';
+
+      const body = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value
+      };
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          notif.className = 'notification-banner error';
+          notif.textContent = data.error || 'Authentication failed';
+          notif.style.display = 'block';
+          return;
+        }
+        window.location.href = data.redirectUrl;
+      } catch (err) {
+        notif.className = 'notification-banner error';
+        notif.textContent = 'Server connection error.';
+        notif.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

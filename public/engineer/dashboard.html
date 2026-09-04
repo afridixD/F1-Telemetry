@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Paddock Pass | Engineering Console</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="theme-engineer">
+  <header class="navbar">
+    <div class="brand">PADDOCK PASS // ENGINEERING</div>
+    <div class="user-meta">
+      <span id="userBadge" style="font-size: 0.85rem;"></span>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="notif" class="notification-banner"></div>
+
+    <div class="dashboard-grid">
+      <div class="card">
+        <h3>Register New Part</h3>
+        <form id="createPartForm">
+          <div class="form-group">
+            <label>Serial Number</label>
+            <input type="text" id="p_serial" placeholder="e.g. FW-2026-099" required>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="p_category" required></select>
+          </div>
+          <div class="form-group">
+            <label>Supplier</label>
+            <select id="p_supplier" required></select>
+          </div>
+          <div class="form-group">
+            <label>Initial Status</label>
+            <select id="p_status">
+              <option value="In Stock">In Stock</option>
+              <option value="In Transit">In Transit</option>
+            </select>
+          </div>
+          <button type="submit" class="btn">Save Part</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Fleet Stock Aggregates</h3>
+        <div id="summaryCards" style="display: flex; gap: 1rem; flex-wrap: wrap;"></div>
+        <div class="table-responsive">
+          <table id="categorySummaryTable">
+            <thead>
+              <tr><th>Category</th><th>Count</th><th>Avg Wear</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Parts Inventory & Wear Lifespan Monitor</h3>
+      <div class="table-responsive">
+        <table id="partsTable">
+          <thead>
+            <tr>
+              <th>Serial Number</th>
+              <th>Category</th>
+              <th>Supplier</th>
+              <th>Status</th>
+              <th>Mileage (km)</th>
+              <th>Wear %</th>
+              <th>Lifespan Alert</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <script src="/js/engineer.js"></script>
+</body>
+</html>

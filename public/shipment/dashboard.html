@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Paddock Pass | Logistics & Shipments</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="theme-shipment">
+  <header class="navbar">
+    <div class="brand">PADDOCK PASS // FREIGHT & LOGISTICS</div>
+    <div class="user-meta">
+      <span id="userBadge" style="font-size: 0.85rem;"></span>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="notif" class="notification-banner"></div>
+
+    <div class="dashboard-grid">
+      <div class="card">
+        <h3>Create New Consignment</h3>
+        <form id="createShipmentForm">
+          <div class="form-group">
+            <label>Tracking Code</label>
+            <input type="text" id="s_tracking" placeholder="e.g. DHL-F1-1002" required>
+          </div>
+          <div class="form-group">
+            <label>Origin Location</label>
+            <input type="text" id="s_origin" placeholder="e.g. Ferrari Factory, Maranello" required>
+          </div>
+          <div class="form-group">
+            <label>Estimated Arrival Date</label>
+            <input type="date" id="s_arrival">
+          </div>
+          <button type="submit" class="btn">Dispatch Shipment</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Add Parts to Shipment</h3>
+        <form id="addItemForm">
+          <div class="form-group">
+            <label>Select Consignment</label>
+            <select id="item_shipment_id" required></select>
+          </div>
+          <div class="form-group">
+            <label>Part Serial Number</label>
+            <input type="text" id="item_serial" placeholder="e.g. MGU-2026-401" required>
+          </div>
+          <button type="submit" class="btn">Attach Part</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Track & Receive Shipments</h3>
+      <div class="table-responsive">
+        <table id="shipmentsTable">
+          <thead>
+            <tr>
+              <th>Tracking Code</th>
+              <th>Origin</th>
+              <th>ETA</th>
+              <th>Status</th>
+              <th>Dispatched By</th>
+              <th>Items</th>
+              <th>Delivery Action (Atomic Transaction)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <script src="/js/shipment.js"></script>
+</body>
+</html>

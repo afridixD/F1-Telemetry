@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Paddock Pass | Pit Lane Mechanics</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="theme-mechanic">
+  <header class="navbar">
+    <div class="brand">PADDOCK PASS // PIT CREW</div>
+    <div class="user-meta">
+      <span id="userBadge" style="font-size: 0.85rem;"></span>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="notif" class="notification-banner"></div>
+
+    <div class="dashboard-grid">
+      <div class="card">
+        <h3>Fit Part to Chassis</h3>
+        <form id="fitForm">
+          <div class="form-group">
+            <label>Select Car</label>
+            <select id="fit_car_id" required></select>
+          </div>
+          <div class="form-group">
+            <label>Available Part (In Stock)</label>
+            <select id="fit_serial" required></select>
+          </div>
+          <button type="submit" class="btn">Mount Part</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Report Part Failure</h3>
+        <form id="failureForm">
+          <div class="form-group">
+            <label>Part Serial Number</label>
+            <input type="text" id="fail_serial" placeholder="e.g. BRK-2026-101" required>
+          </div>
+          <div class="form-group">
+            <label>Severity</label>
+            <select id="fail_severity">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Failure Analysis / Reason</label>
+            <textarea id="fail_reason" rows="2" required></textarea>
+          </div>
+          <button type="submit" class="btn" style="background:var(--danger); color:#fff;">Log Incident</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 2rem;">
+      <h3>Active Car Configurations & Mounted Components</h3>
+      <div id="carsList"></div>
+    </div>
+
+    <div class="card">
+      <h3>Open Pit-Lane Failures</h3>
+      <div class="table-responsive">
+        <table id="failuresTable">
+          <thead>
+            <tr>
+              <th>Part Serial</th>
+              <th>Category</th>
+              <th>Severity</th>
+              <th>Reported By</th>
+              <th>Reason</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <script src="/js/mechanic.js"></script>
+</body>
+</html>
