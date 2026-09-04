@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>F1 Telemetry | Logistics & Shipments</title>
+  <title>F1 Telemetry | Freight & Logistics</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="theme-shipment">
@@ -45,14 +45,38 @@
             <select id="item_shipment_id" required></select>
           </div>
           <div class="form-group">
-            <label>Part Serial Number</label>
-            <input type="text" id="item_serial" placeholder="e.g. MGU-2026-401" required>
+            <label>Select Part to Ship</label>
+            <select id="item_serial" required></select>
           </div>
           <button type="submit" class="btn">Attach Part</button>
         </form>
       </div>
     </div>
 
+    <!-- Cross-Department Requisitions Queue -->
+    <div class="card" style="margin-bottom: 24px;">
+      <h3>Parts Requisition Queue (Damaged & Worn-Out Components)</h3>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
+        Flagged automatically by telemetry and pit-lane mechanics. Replenishment orders needed from suppliers.
+      </p>
+      <div class="table-responsive">
+        <table id="requisitionsTable">
+          <thead>
+            <tr>
+              <th>Part Serial</th>
+              <th>Category</th>
+              <th>Supplier Contact</th>
+              <th>Status</th>
+              <th>Wear %</th>
+              <th>Requisition Reason</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Active Shipments & Intake Transaction -->
     <div class="card">
       <h3>Track & Receive Shipments</h3>
       <div class="table-responsive">

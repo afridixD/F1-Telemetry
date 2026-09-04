@@ -107,9 +107,28 @@ router.post('/:id/items', requireRole(['ShipmentOfficer', 'Admin']), async (req,
   const { id } = req.params;
   const { serial_number, quantity = 1 } = req.body;
 
+  if (!serial_number) {
+    return res.status(400).json({ error: 'Serial number is required.' });
+  }
+
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
+
+    const [part] = await conn.query(
+      `SELECT current_status FROM parts WHERE serial_number = ? FOR UPDATE`,
+      [serial_number]
+    );
+
+    if (part.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: `Part '${serial_number}' does not exist.` });
+    }
+
+    if (part[0].current_status === 'Fitted') {
+      await conn.rollback();
+      return res.status(400).json({ error: `Part '${serial_number}' is mounted to a chassis and cannot be shipped.` });
+    }
 
     await conn.query(
       `INSERT INTO shipment_items (shipment_id, serial_number, quantity) VALUES (?, ?, ?)`,
@@ -125,6 +144,7 @@ router.post('/:id/items', requireRole(['ShipmentOfficer', 'Admin']), async (req,
     res.status(201).json({ message: `Part ${serial_number} assigned to shipment.` });
   } catch (err) {
     await conn.rollback();
+    console.error(err);
     res.status(500).json({ error: 'Failed to attach item to shipment.' });
   } finally {
     conn.release();
@@ -140,13 +160,13 @@ router.post('/:id/deliver', requireRole(['ShipmentOfficer', 'Admin']), async (re
     await conn.beginTransaction();
 
     const [shipmentRes] = await conn.query(
-      `UPDATE shipments SET status = 'Delivered' WHERE shipment_id = ?`,
+      `UPDATE shipments SET status = 'Delivered' WHERE shipment_id = ? AND status != 'Delivered'`,
       [id]
     );
 
     if (shipmentRes.affectedRows === 0) {
       await conn.rollback();
-      return res.status(404).json({ error: 'Shipment not found.' });
+      return res.status(400).json({ error: 'Shipment is already delivered or not found.' });
     }
 
     await conn.query(
@@ -158,7 +178,7 @@ router.post('/:id/deliver', requireRole(['ShipmentOfficer', 'Admin']), async (re
     );
 
     await conn.commit();
-    res.json({ message: `Shipment #${id} delivered. All parts updated to 'In Stock'.` });
+    res.json({ message: `Shipment #${id} delivered. All enclosed parts stocked.` });
   } catch (err) {
     await conn.rollback();
     console.error('Shipment delivery transaction failed:', err);

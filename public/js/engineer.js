@@ -77,6 +77,43 @@ async function loadParts() {
   }).join('');
 }
 
+async function loadCrossDepartmentData() {
+  const res = await fetch('/api/parts/cross/pipeline');
+  const data = await res.json();
+
+  // 1. Render Mechanics Live Garage Work
+  const garageBody = document.querySelector('#engineerGarageTable tbody');
+  if (garageBody) {
+    garageBody.innerHTML = data.garageWork.length === 0
+      ? '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No active chassis setups.</td></tr>'
+      : data.garageWork.map(g => `
+        <tr>
+          <td><b>${g.serial_number}</b> <br><small style="color:var(--text-muted);">${g.category_name}</small></td>
+          <td><b>${g.chassis_code}</b></td>
+          <td>${g.driver_name}</td>
+          <td>${g.mechanic_name}</td>
+          <td>${g.wear_percentage}%</td>
+        </tr>
+      `).join('');
+  }
+
+  // 2. Render Inbound Logistics Pipeline
+  const freightBody = document.querySelector('#engineerFreightTable tbody');
+  if (freightBody) {
+    freightBody.innerHTML = data.inboundFreight.length === 0
+      ? '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No inbound shipments in transit.</td></tr>'
+      : data.inboundFreight.map(f => `
+        <tr>
+          <td><b>${f.serial_number}</b> <br><small style="color:var(--text-muted);">${f.category_name}</small></td>
+          <td>${f.tracking_code}</td>
+          <td>${f.origin_location}</td>
+          <td>${f.estimated_arrival_date ? new Date(f.estimated_arrival_date).toLocaleDateString() : 'TBD'}</td>
+          <td><span class="badge ${f.status === 'In Transit' ? 'badge-warning' : 'badge-info'}">${f.status}</span></td>
+        </tr>
+      `).join('');
+  }
+}
+
 async function deletePart(serial) {
   if (!confirm(`Delete part ${serial}?`)) return;
   const res = await fetch(`/api/parts/${serial}`, { method: 'DELETE' });
@@ -85,6 +122,7 @@ async function deletePart(serial) {
     showNotif(data.message);
     loadParts();
     loadSummaries();
+    loadCrossDepartmentData();
   } else {
     showNotif(data.error, true);
   }
@@ -110,6 +148,7 @@ document.getElementById('createPartForm').addEventListener('submit', async (e) =
     document.getElementById('createPartForm').reset();
     loadParts();
     loadSummaries();
+    loadCrossDepartmentData();
   } else {
     showNotif(data.error, true);
   }
@@ -124,3 +163,4 @@ checkUser();
 loadDropdowns();
 loadSummaries();
 loadParts();
+loadCrossDepartmentData();

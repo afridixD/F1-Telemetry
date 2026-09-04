@@ -73,6 +73,7 @@ async function removePart(assignment_id) {
   if (res.ok) {
     showNotif(data.message);
     loadCarsAndParts();
+    loadInboundParts();
   } else {
     showNotif(data.error, true);
   }
@@ -104,9 +105,31 @@ async function resolveFailure(id) {
     showNotif(data.message);
     loadFailures();
     loadCarsAndParts();
+    loadInboundParts();
   } else {
     showNotif(data.error, true);
   }
+}
+
+async function loadInboundParts() {
+  const res = await fetch('/api/parts/cross/pipeline');
+  const data = await res.json();
+
+  const tbody = document.querySelector('#mechanicFreightTable tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = data.inboundFreight.length === 0
+    ? '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No freight currently in transit.</td></tr>'
+    : data.inboundFreight.map(f => `
+      <tr>
+        <td><b>${f.serial_number}</b></td>
+        <td>${f.category_name}</td>
+        <td>${f.tracking_code}</td>
+        <td>${f.dispatched_by || 'Logistics'}</td>
+        <td>${f.estimated_arrival_date ? new Date(f.estimated_arrival_date).toLocaleDateString() : 'N/A'}</td>
+        <td><span class="badge ${f.status === 'In Transit' ? 'badge-warning' : 'badge-info'}">${f.status}</span></td>
+      </tr>
+    `).join('');
 }
 
 document.getElementById('fitForm').addEventListener('submit', async (e) => {
@@ -123,6 +146,7 @@ document.getElementById('fitForm').addEventListener('submit', async (e) => {
   if (res.ok) {
     showNotif(data.message);
     loadCarsAndParts();
+    loadInboundParts();
   } else {
     showNotif(data.error, true);
   }
@@ -145,6 +169,7 @@ document.getElementById('failureForm').addEventListener('submit', async (e) => {
     document.getElementById('failureForm').reset();
     loadFailures();
     loadCarsAndParts();
+    loadInboundParts();
   } else {
     showNotif(data.error, true);
   }
@@ -158,3 +183,4 @@ async function logout() {
 checkUser();
 loadCarsAndParts();
 loadFailures();
+loadInboundParts();

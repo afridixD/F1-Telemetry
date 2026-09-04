@@ -17,15 +17,30 @@ function showNotif(msg, isError = false) {
 }
 
 async function loadShipments() {
-  const res = await fetch('/api/shipments');
-  const shipments = await res.json();
+  const [shipRes, partRes] = await Promise.all([
+    fetch('/api/shipments'),
+    fetch('/api/parts')
+  ]);
+  const shipments = await shipRes.json();
+  const parts = await partRes.json();
 
+  // Populate active consignments select
   const select = document.getElementById('item_shipment_id');
   select.innerHTML = shipments
     .filter(s => s.status !== 'Delivered')
     .map(s => `<option value="${s.shipment_id}">${s.tracking_code} (${s.status})</option>`)
     .join('');
 
+  // Populate parts select dropdown (only nominal in-stock parts available to ship)
+  const partInputOrSelect = document.getElementById('item_serial');
+  if (partInputOrSelect && partInputOrSelect.tagName === 'SELECT') {
+    const availableParts = parts.filter(p => p.current_status === 'In Stock');
+    partInputOrSelect.innerHTML = availableParts.length === 0
+      ? '<option value="">No In-Stock Parts Available</option>'
+      : availableParts.map(p => `<option value="${p.serial_number}">${p.serial_number} (${p.category_name})</option>`).join('');
+  }
+
+  // Render shipments table
   const tbody = document.querySelector('#shipmentsTable tbody');
   tbody.innerHTML = shipments.map(s => `
     <tr>
@@ -48,6 +63,31 @@ async function loadShipments() {
   `).join('');
 }
 
+async function loadRequisitions() {
+  try {
+    const res = await fetch('/api/parts/cross/requisitions');
+    const items = await res.json();
+
+    const tbody = document.querySelector('#requisitionsTable tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = items.length === 0
+      ? '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">All garage components are nominal. No orders required.</td></tr>'
+      : items.map(r => `
+        <tr>
+          <td><b>${r.serial_number}</b></td>
+          <td>${r.category_name}</td>
+          <td>${r.supplier_name} <br><small style="color:var(--text-muted);">${r.contact_email || 'N/A'}</small></td>
+          <td><span class="badge ${r.current_status === 'Failed' ? 'badge-danger' : 'badge-warning'}">${r.current_status}</span></td>
+          <td>${r.wear_percentage}%</td>
+          <td><span class="badge ${r.requisition_priority.startsWith('CRITICAL') ? 'badge-danger' : 'badge-warning'}">${r.requisition_priority}</span></td>
+        </tr>
+      `).join('');
+  } catch (err) {
+    console.error('Failed to load requisitions:', err);
+  }
+}
+
 async function deliverShipment(id) {
   if (!confirm('Mark shipment Delivered? This executes an atomic transaction setting all enclosed parts to In Stock.')) return;
   const res = await fetch(`/api/shipments/${id}/deliver`, { method: 'POST' });
@@ -55,6 +95,7 @@ async function deliverShipment(id) {
   if (res.ok) {
     showNotif(data.message);
     loadShipments();
+    loadRequisitions();
   } else {
     showNotif(data.error, true);
   }
@@ -76,6 +117,7 @@ document.getElementById('createShipmentForm').addEventListener('submit', async (
     showNotif('Consignment dispatched.');
     document.getElementById('createShipmentForm').reset();
     loadShipments();
+    loadRequisitions();
   } else {
     showNotif(data.error, true);
   }
@@ -86,6 +128,11 @@ document.getElementById('addItemForm').addEventListener('submit', async (e) => {
   const shipmentId = document.getElementById('item_shipment_id').value;
   const serial = document.getElementById('item_serial').value;
 
+  if (!serial) {
+    showNotif('Please select or specify a valid part.', true);
+    return;
+  }
+
   const res = await fetch(`/api/shipments/${shipmentId}/items`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -94,8 +141,8 @@ document.getElementById('addItemForm').addEventListener('submit', async (e) => {
   const data = await res.json();
   if (res.ok) {
     showNotif(data.message);
-    document.getElementById('item_serial').value = '';
     loadShipments();
+    loadRequisitions();
   } else {
     showNotif(data.error, true);
   }
@@ -108,3 +155,4 @@ async function logout() {
 
 checkUser();
 loadShipments();
+loadRequisitions();

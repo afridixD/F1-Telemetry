@@ -12,24 +12,24 @@ router.get('/', async (req, res) => {
       `SELECT 
          p.serial_number,
          p.category_id,
-         c.category_name,
+         COALESCE(c.category_name, 'Uncategorized') AS category_name,
          c.max_lifespan_km,
          p.supplier_id,
-         s.supplier_name,
+         COALESCE(s.supplier_name, 'Direct OEM') AS supplier_name,
          p.current_status,
          p.total_mileage_km,
          p.wear_percentage,
          p.created_at,
          u.username AS created_by_user
        FROM parts p
-       INNER JOIN part_categories c ON p.category_id = c.category_id
-       INNER JOIN suppliers s ON p.supplier_id = s.supplier_id
+       LEFT JOIN part_categories c ON p.category_id = c.category_id
+       LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
        LEFT JOIN users u ON p.created_by = u.user_id
        ORDER BY p.wear_percentage DESC`
     );
     res.json(parts);
   } catch (err) {
-    console.error(err);
+    console.error('Error querying parts catalogue:', err);
     res.status(500).json({ error: 'Error querying parts catalogue.' });
   }
 });
@@ -48,8 +48,84 @@ router.get('/summary', async (req, res) => {
     );
     res.json({ statusSummary, categorySummary });
   } catch (err) {
-    console.error(err);
+    console.error('Error querying summary reports:', err);
     res.status(500).json({ error: 'Error querying summary reports.' });
+  }
+});
+
+// GET /api/parts/cross/pipeline (Inbound Freight + Active Garage Work)
+router.get('/cross/pipeline', async (req, res) => {
+  try {
+    const [inboundFreight] = await db.query(
+      `SELECT 
+         si.serial_number, 
+         COALESCE(c.category_name, 'General Item') AS category_name, 
+         s.tracking_code, 
+         s.origin_location, 
+         s.status, 
+         s.estimated_arrival_date,
+         u.username AS dispatched_by
+       FROM shipment_items si
+       INNER JOIN shipments s ON si.shipment_id = s.shipment_id
+       INNER JOIN parts p ON si.serial_number = p.serial_number
+       LEFT JOIN part_categories c ON p.category_id = c.category_id
+       LEFT JOIN users u ON s.dispatched_by = u.user_id
+       WHERE s.status != 'Delivered'
+       ORDER BY s.estimated_arrival_date ASC`
+    );
+
+    const [garageWork] = await db.query(
+      `SELECT 
+         pa.serial_number,
+         COALESCE(c.category_name, 'General Item') AS category_name,
+         car.chassis_code,
+         car.driver_name,
+         u.username AS mechanic_name,
+         pa.fitted_at,
+         p.wear_percentage
+       FROM part_assignments pa
+       INNER JOIN cars car ON pa.car_id = car.car_id
+       INNER JOIN parts p ON pa.serial_number = p.serial_number
+       LEFT JOIN part_categories c ON p.category_id = c.category_id
+       INNER JOIN users u ON pa.mechanic_id = u.user_id
+       WHERE pa.removed_at IS NULL
+       ORDER BY pa.fitted_at DESC`
+    );
+
+    res.json({ inboundFreight, garageWork });
+  } catch (err) {
+    console.error('Error querying cross-department pipeline:', err);
+    res.status(500).json({ error: 'Failed to retrieve cross-department pipeline data.' });
+  }
+});
+
+// GET /api/parts/cross/requisitions (Damaged & High-Wear Parts)
+router.get('/cross/requisitions', async (req, res) => {
+  try {
+    const [requisitions] = await db.query(
+      `SELECT 
+         p.serial_number,
+         COALESCE(c.category_name, 'Uncategorized') AS category_name,
+         COALESCE(s.supplier_name, 'Direct OEM') AS supplier_name,
+         s.contact_email,
+         p.current_status,
+         p.wear_percentage,
+         p.total_mileage_km,
+         CASE 
+           WHEN p.current_status = 'Failed' THEN 'CRITICAL: Component Failure'
+           WHEN p.wear_percentage >= 80.0 THEN 'HIGH: Lifespan Exceeded (>80%)'
+           ELSE 'NOMINAL'
+         END AS requisition_priority
+       FROM parts p
+       LEFT JOIN part_categories c ON p.category_id = c.category_id
+       LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
+       WHERE p.current_status = 'Failed' OR p.wear_percentage >= 80.0
+       ORDER BY p.wear_percentage DESC`
+    );
+    res.json(requisitions);
+  } catch (err) {
+    console.error('Error querying requisitions:', err);
+    res.status(500).json({ error: 'Failed to retrieve order requisitions.' });
   }
 });
 
